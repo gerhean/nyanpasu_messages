@@ -171,7 +171,7 @@ func main() {
 	}
 
 	fetchMessagesFromDb()
-	// gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.Use(CORSMiddleware())
 	router.GET("/messages", getMessages)

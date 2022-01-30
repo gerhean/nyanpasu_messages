@@ -1,5 +1,8 @@
 # syntax=docker/dockerfile:1
 # https://docs.docker.com/language/golang/build-images/
+# docker build --tag nyanpasu-go-backend .
+# docker run -d -p 8080:8080 --env-file ./.env --name happy_nyanpasu nyanpasu-go-backend
+# docker stop happy_nyanpasu
 
 FROM golang:1.16-alpine
 
@@ -14,17 +17,6 @@ COPY *.go ./
 
 RUN go build -o /nyanpasu-go-backend
 
-##
-## Deploy
-##
-FROM gcr.io/distroless/base-debian10
-
-WORKDIR /
-
-COPY --from=build /docker-gs-ping /docker-gs-ping
-
 EXPOSE 8080
 
-USER nonroot:nonroot
-
-ENTRYPOINT [ "/nyanpasu-go-backend" ]
+CMD [ "/nyanpasu-go-backend" ]
