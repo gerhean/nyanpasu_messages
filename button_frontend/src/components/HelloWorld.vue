@@ -1,9 +1,9 @@
 <template>
   <div class="hello">
     <h1>Nyanpasu Message Board</h1>
-
-    <div v-for="msg in messages" :key="msg.count">
-      <MessageCard v-bind:msg="msg"/>
+    
+    <div class="card-list overflow-auto" ref="cardList">
+      <MessageCard v-bind:msg="msg" v-for="msg in messages" :key="msg.count"/>
     </div>
 
     <div class="my-footer">
@@ -32,16 +32,28 @@ export default {
     MessageCard
   },
   computed: mapState([
-    // map this.count to store.state.count
     'messages'
   ]),
   mounted() {
-    this.$store.commit('load_example_messages')
+    this.$store.dispatch('load_backend_messages')
+  },
+  watch: {
+    messages: {
+      handler() {
+        this.$nextTick(() => this.scrollToEnd());
+      },
+      deep: true
+    }
   },
   methods: {
     sendMessage() {
       this.$store.dispatch('send_message', {message_str: this.messageInput});
       this.messageInput = "";
+    },
+    scrollToEnd: function () {
+      // scroll to the start of the last message
+      console.log("hi");
+      this.$refs.cardList.scrollTop = this.$refs.cardList.lastElementChild.offsetTop;
     }
   }
 }
@@ -55,10 +67,8 @@ h1 {
   color: plum;
   background-color: greenyellow;
 }
-.my-card {
-  margin: 20px auto;
-  display: block;
-  width: 50vw;
+.card-list {
+  height: 50vh;
 }
 .my-footer {
   position: absolute;

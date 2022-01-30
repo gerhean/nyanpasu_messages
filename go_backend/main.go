@@ -124,6 +124,9 @@ func postMessages(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
+	if returnMessage.Count > 1000 {
+		panic("Too many entries in database!!!")
+	}
 
 	collection = client.Database("nyanpasuSite").Collection("messages")
 	_, err = collection.InsertOne(ctx, newMessage)
@@ -136,6 +139,23 @@ func postMessages(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, newMessage)
 }
 
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Header("Access-Control-Allow-Methods", "POST,HEAD,PATCH, OPTIONS, GET, PUT")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func main() {
 	// load .env file from given path
 	_ = godotenv.Load(".env")
@@ -144,8 +164,9 @@ func main() {
 
 	fetchMessagesFromDb()
 	router := gin.Default()
+	router.Use(CORSMiddleware())
 	router.GET("/messages", getMessages)
 	router.POST("/messages", postMessages)
 
-	router.Run("localhost:8080")
+	router.Run("localhost:8082")
 }
