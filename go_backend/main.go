@@ -27,10 +27,9 @@ type counter struct {
 	Count float64 `bson:"seq_value"`
 }
 
-var messages = []boardMessage{
-	{Count: 1, Msg: "Good morning!", Time: "2022-01-30T08:01:46.356Z"},
-	// {Count: 2, Msg: "Nyanpasu!", Time: "2022-01-30T08:03:10.862Z"},
-}
+// An example being:
+// {{Count: 1, Msg: "Good morning!", Time: "2022-01-30T08:01:46.356Z"}, }
+var messages []boardMessage
 
 var driver_URI string = ""
 
@@ -57,7 +56,46 @@ func connect(uri string) (*mongo.Client, context.Context, context.CancelFunc, er
 }
 
 func getMessages(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, messages)
+	if len(messages) > 5 {
+		c.IndentedJSON(http.StatusOK, messages[len(messages)-5:])
+	} else {
+		c.IndentedJSON(http.StatusOK, messages)
+	}
+}
+
+func fetchMessagesFromDb() {
+	client, ctx, cancel, err := connect(driver_URI)
+	if err != nil {
+		panic(err)
+	}
+	//  free resource when main function is returned
+	defer close(client, ctx, cancel)
+
+	returnMessage := counter{}
+	collection := client.Database("nyanpasuSite").Collection("counters")
+	err = collection.FindOne(
+		ctx,
+		bson.M{"_id": bson.M{"db": "nyanpasuSite", "coll": "messages"}},
+		options.FindOne().SetProjection(bson.M{"_id": 0}),
+	).Decode(&returnMessage)
+	if err != nil {
+		panic(err)
+	}
+	count := returnMessage.Count
+
+	collection = client.Database("nyanpasuSite").Collection("messages")
+	filter := bson.M{"count": bson.M{"$gt": count - 5}}
+	cursor, err := collection.Find(ctx,
+		filter,
+		options.Find().SetProjection(bson.M{"_id": 0}),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	if err = cursor.All(ctx, &messages); err != nil {
+		panic(err)
+	}
 }
 
 // postAlbums adds an album from JSON received in the request body.
@@ -69,7 +107,6 @@ func postMessages(c *gin.Context) {
 		return
 	}
 
-	// MongoDB part
 	client, ctx, cancel, err := connect(driver_URI)
 	if err != nil {
 		panic(err)
@@ -105,6 +142,7 @@ func main() {
 	// ignore error
 	driver_URI = os.Getenv("MONGO_URI")
 
+	fetchMessagesFromDb()
 	router := gin.Default()
 	router.GET("/messages", getMessages)
 	router.POST("/messages", postMessages)
