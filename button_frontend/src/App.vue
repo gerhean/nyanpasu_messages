@@ -1,6 +1,6 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <img class="img-renge" alt="Vue logo" src="./assets/miyauchi-renge.jpg">
+  <HelloWorld />
 </template>
 
 <script>
@@ -20,7 +20,18 @@ export default {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  color: #e3e6e9;
+  height: 100vh;
+  background: url("./assets/nyanpasu.jpg") no-repeat center center fixed; 
+  background-size: cover;
+  background-attachment: fixed;
+  /* margin-top: 60px; */
+}
+
+.img-renge {
+  border-radius: 50%;
+  height: 200px;
+  width: 400px;
+  margin-bottom: 10px;
 }
 </style>
