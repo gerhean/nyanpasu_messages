@@ -3,6 +3,7 @@ package main
 // https://go.dev/doc/tutorial/web-service-gin
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -162,11 +163,19 @@ func main() {
 	// ignore error
 	driver_URI = os.Getenv("MONGO_URI")
 
+	// Determine port for HTTP service.
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("defaulting to port %s", port)
+	}
+
 	fetchMessagesFromDb()
+	// gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.Use(CORSMiddleware())
 	router.GET("/messages", getMessages)
 	router.POST("/messages", postMessages)
 
-	router.Run("localhost:8082")
+	router.Run(":" + port)
 }
