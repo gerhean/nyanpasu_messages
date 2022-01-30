@@ -6,14 +6,31 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 
 	"context"
+	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+type boardMessage struct {
+	Count float64 `json:"count,omitempty" bson:"count,omitempty"`
+	Msg   string  `json:"msg" bson:"msg"`
+	Time  string  `json:"time" bson:"time"`
+}
+
+type counter struct {
+	Count float64 `bson:"seq_value"`
+}
+
+var messages = []boardMessage{
+	{Count: 1, Msg: "Good morning!", Time: "2022-01-30T08:01:46.356Z"},
+	// {Count: 2, Msg: "Nyanpasu!", Time: "2022-01-30T08:03:10.862Z"},
+}
 
 var driver_URI string = ""
 
@@ -37,22 +54,6 @@ func connect(uri string) (*mongo.Client, context.Context, context.CancelFunc, er
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	return client, ctx, cancel, err
-}
-
-type boardMessage struct {
-	Count float64 `json:"count,omitempty" bson:"count,omitempty"`
-	Msg   string  `json:"msg" bson:"msg"`
-	Time  string  `json:"time" bson:"time"`
-}
-
-type counter struct {
-	Count float64 `bson:"seq_value"`
-}
-
-// albums slice to seed record album data.
-var messages = []boardMessage{
-	{Count: 1, Msg: "Good morning!", Time: "2022-01-30T08:01:46.356Z"},
-	// {Count: 2, Msg: "Nyanpasu!", Time: "2022-01-30T08:03:10.862Z"},
 }
 
 func getMessages(c *gin.Context) {
@@ -99,6 +100,11 @@ func postMessages(c *gin.Context) {
 }
 
 func main() {
+	// load .env file from given path
+	_ = godotenv.Load(".env")
+	// ignore error
+	driver_URI = os.Getenv("MONGO_URI")
+
 	router := gin.Default()
 	router.GET("/messages", getMessages)
 	router.POST("/messages", postMessages)
