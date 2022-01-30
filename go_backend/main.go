@@ -8,9 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"context"
-	"log"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -32,39 +32,27 @@ func close(client *mongo.Client, ctx context.Context, cancel context.CancelFunc)
 // context.Context, context.CancelFunc and error.
 // mongo.Client will be used for further database operation.
 // context.Context will be used set deadlines for process.
-// context.CancelFunc will be used to cancel context and
-// resource associated with it.
+// context.CancelFunc will be used to cancel context and resource associated with it.
 func connect(uri string) (*mongo.Client, context.Context, context.CancelFunc, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	return client, ctx, cancel, err
 }
 
-// insertOne is a user defined method, used to insert
-// documents into collection returns result of InsertOne
-// and error if any.
-func insertOne(client *mongo.Client, ctx context.Context,
-	dataBase, col string, doc interface{}) (*mongo.InsertOneResult, error) {
-	// select database and collection ith Client.Database method
-	// and Database.Collection method
-	collection := client.Database(dataBase).Collection(col)
-	// InsertOne accept two argument of type Context
-	// and of empty interface
-	result, err := collection.InsertOne(ctx, doc)
-	return result, err
+type boardMessage struct {
+	Count float64 `json:"count,omitempty" bson:"count,omitempty"`
+	Msg   string  `json:"msg" bson:"msg"`
+	Time  string  `json:"time" bson:"time"`
 }
 
-// album represents data about a record album.
-type boardMessage struct {
-	ID   float64 `json:"count"`
-	Msg  string  `json:"msg"`
-	Time string  `json:"time"`
+type counter struct {
+	Count float64 `bson:"seq_value"`
 }
 
 // albums slice to seed record album data.
 var messages = []boardMessage{
-	{ID: 1, Msg: "Good morning!", Time: "2022-01-30T08:01:46.356Z"},
-	{ID: 2, Msg: "Nyanpasu!", Time: "2022-01-30T08:03:10.862Z"},
+	{Count: 1, Msg: "Good morning!", Time: "2022-01-30T08:01:46.356Z"},
+	// {Count: 2, Msg: "Nyanpasu!", Time: "2022-01-30T08:03:10.862Z"},
 }
 
 func getMessages(c *gin.Context) {
@@ -74,35 +62,46 @@ func getMessages(c *gin.Context) {
 // postAlbums adds an album from JSON received in the request body.
 func postMessages(c *gin.Context) {
 	var newMessage boardMessage
-	// value, _ := c.GetRawData()
-	// fmt.Print(value)
-
 	// Call BindJSON to bind the received JSON to
 	// newMessage.
 	if err := c.BindJSON(&newMessage); err != nil {
 		return
 	}
 
-	// Add the new album to the slice.
+	// MongoDB part
+	client, ctx, cancel, err := connect(driver_URI)
+	if err != nil {
+		panic(err)
+	}
+	//  free resource when main function is returned
+	defer close(client, ctx, cancel)
+
+	returnMessage := counter{}
+	collection := client.Database("nyanpasuSite").Collection("counters")
+	err = collection.FindOne(
+		ctx,
+		bson.M{"_id": bson.M{"db": "nyanpasuSite", "coll": "messages"}},
+		options.FindOne().SetProjection(bson.M{"_id": 0}),
+	).Decode(&returnMessage)
+	if err != nil {
+		panic(err)
+	}
+
+	collection = client.Database("nyanpasuSite").Collection("messages")
+	_, err = collection.InsertOne(ctx, newMessage)
+	if err != nil {
+		panic(err)
+	}
+
+	newMessage.Count = returnMessage.Count + 1
 	messages = append(messages, newMessage)
 	c.IndentedJSON(http.StatusCreated, newMessage)
 }
 
 func main() {
-	client, err := mongo.NewClient(options.Client().ApplyURI(driver_URI))
-	if err != nil {
-		log.Fatal(err)
-	}
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err = client.Connect(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer client.Disconnect(ctx)
+	router := gin.Default()
+	router.GET("/messages", getMessages)
+	router.POST("/messages", postMessages)
 
-	// router := gin.Default()
-	// router.GET("/messages", getMessages)
-	// router.POST("/messages", postMessages)
-
-	// router.Run("localhost:8080")
+	router.Run("localhost:8080")
 }
