@@ -33,4 +33,8 @@
 
 ## Tips
 - Remember to set correct ip for mongo atlas
-- Set [environment](https://stackoverflow.com/a/66526312) for secrets in github actions 
+- Set [environment](https://stackoverflow.com/a/66526312) for secrets in github actions
+- Github actions allows you to [run workflow](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions) only when file in path is changed in a single branch, a lot of nice control.
+
+## Story
+I really wanted to try having at least one cloud hosted project, so I challenged myself to make this in a single day. Unfortunately, it took 2 days to finish. However, I learnt a lot since it was the first time I ever used golang/MongoDB/google cloud/github actions in a new project. Also Bootstrap 5 was quite cool.
