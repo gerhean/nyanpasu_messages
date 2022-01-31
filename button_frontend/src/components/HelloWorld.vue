@@ -20,6 +20,7 @@
 <script>
 import { mapState } from 'vuex'
 import MessageCard from './MessageCard'
+import nyanpasu_sound from '../assets/nyanpasu.mp3'
 
 export default {
   name: 'HelloWorld',
@@ -49,6 +50,8 @@ export default {
     sendMessage() {
       this.$store.dispatch('send_message', {message_str: this.messageInput});
       this.messageInput = "";
+      const audio = new Audio(nyanpasu_sound);
+      audio.play();
     },
     scrollToEnd: function () {
       this.$refs.cardList.scrollTop = this.$refs.cardList.lastElementChild.offsetTop;
