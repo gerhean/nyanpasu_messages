@@ -51,8 +51,6 @@ export default {
       this.messageInput = "";
     },
     scrollToEnd: function () {
-      // scroll to the start of the last message
-      console.log("hi");
       this.$refs.cardList.scrollTop = this.$refs.cardList.lastElementChild.offsetTop;
     }
   }

@@ -1,6 +1,8 @@
 import { createStore } from 'vuex'
 import example from './example_data'
 
+const BACKEND_URL = process.env.VUE_APP_BACKEND_URL || "http://localhost:8082/"
+
 export default createStore({
     state () {
         return {
@@ -25,7 +27,7 @@ export default createStore({
         },
 
         async send_message ({ commit }, payload) {
-            const url = "http://localhost:8082/" + "messages"
+            const url = BACKEND_URL + "messages";
             const to_send = {
                 "msg": payload.message_str || "にゃんぱすー!",
                 "time": (new Date()).toJSON()
@@ -33,10 +35,6 @@ export default createStore({
             console.log(to_send);
             const rawResponse = await fetch(url, {
                 method: 'POST',
-                headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-                },
                 body: JSON.stringify(to_send)
             });
             const data = await rawResponse.json();
@@ -47,8 +45,13 @@ export default createStore({
         },
 
         async load_backend_messages({ commit, dispatch }) {
-            const url = "http://localhost:8082/" + "messages"
-            const response = await fetch(url);
+            const url = BACKEND_URL + "messages";
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            });
             const data = await response.json();
             if (data.error) {
                 dispatch('load_example_messages');
